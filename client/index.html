@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Sample</title>
+    <link rel="stylesheet" href="node_modules/@divkitframework/divkit/dist/client.css">
+</head>
+<body>
+    <div id="root"></div>
+
+    <script src="node_modules/@divkitframework/divkit/dist/browser/client.js"></script>
+    <script>
+        (function() {
+            const controller = Ya.Divkit.createGlobalVariablesController();
+            const stateVar = Ya.Divkit.createVariable('state', 'string', '');
+            const responseVar = Ya.Divkit.createVariable('response', 'string', '');
+
+            controller.setVariable(stateVar);
+            controller.setVariable(responseVar);
+
+            Ya.Divkit.render({
+                id: 'form',
+                target: document.querySelector('#root'),
+                globalVariablesController: controller,
+                onCustomAction(action) {
+                    if (action.url === 'custom-submit://') {
+                        stateVar.setValue('loading');
+                        fetch('/submit-data/', {
+                            method: 'post'
+                        })
+                            .then(res => {
+                                if (!res.ok) {
+                                    throw new Error('Response is not ok');
+                                }
+                                return res.json();
+                            })
+                            .then(json => {
+                                if (!json.ok) {
+                                    throw new Error('Server error');
+                                }
+                                stateVar.setValue('loaded');
+                                responseVar.setValue(json.response);
+                            })
+                            .catch(err => {
+                                console.error(err);
+                                stateVar.setValue('error');
+                            });
+                    }
+                },
+                json: {
+                    "templates": {},
+                    "card": {
+                        "type": "div2",
+                        "log_id": "snapshot_test_card",
+                        "states": [
+                            {
+                                "state_id": 0,
+                                "div": {
+                                    "type": "container",
+                                    "items": [{
+                                        "type": "text",
+                                        "font_size": 20,
+                                        "margins": {
+                                            "top": 10
+                                        },
+                                        "text": "Submit",
+                                        "paddings": {
+                                            "top": 8,
+                                            "bottom": 8,
+                                            "left": 16,
+                                            "right": 16
+                                        },
+                                        "background": [{
+                                            "type": "solid",
+                                            "color": "#ccc"
+                                        }],
+                                        "border": {
+                                            "corner_radius": 8
+                                        },
+                                        "action": {
+                                            "log_id": "submit",
+                                            "url": "custom-submit://"
+                                        },
+                                        "visibility": "@{state != '' ? 'gone' : 'visible'}"
+                                    }, {
+                                        "type": "text",
+                                        "text": "Loading",
+                                        "visibility": "@{state != 'loading' ? 'gone' : 'visible'}"
+                                    }, {
+                                        "type": "text",
+                                        "text": "Loaded: @{response}",
+                                        "visibility": "@{state != 'loaded' ? 'gone' : 'visible'}"
+                                    }, {
+                                        "type": "text",
+                                        "text": "Error",
+                                        "visibility": "@{state != 'error' ? 'gone' : 'visible'}"
+                                    }]
+                                }
+                            }
+                        ]
+                    }
+                }
+            });
+        })();
+    </script>
+</body>
+</html>
